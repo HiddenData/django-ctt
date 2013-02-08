@@ -13,7 +13,7 @@ from django.utils.translation import ugettext as _
 
 class CTTModel(models.Model):
     parent = models.ForeignKey('self', null=True, blank=True)
-    level = models.IntegerField(default=0)
+    level = models.IntegerField(default=0, blank=True)
     _tpm = None # overwrite by core.register()
     tpd = None # overwrite by core.register()
     tpa = None # overwrite by core.register()
@@ -38,6 +38,8 @@ class CTTModel(models.Model):
             old_parent = None
         if self.parent:
             self.level = self.parent.level + 1
+        else:
+            self.level = 0
         super(CTTModel, self).save(force_insert, force_update, using)
         if is_new:
             self.insert_at(self.parent, save=False, allow_existing_pk=True)
@@ -80,7 +82,7 @@ class CTTModel(models.Model):
         return nodes
 
     def get_level(self):
-        return self.tpd.latest('path_len').path_len
+        return self.level
 
     def _get_next_from_qs(self, qs):
         take = False
@@ -124,6 +126,10 @@ class CTTModel(models.Model):
         """
         manager.insert_node
         """
+        if not self.pk:
+            self.save()
+            return
+
         if self.pk and not allow_existing_pk and\
            self._cls.objects.filter(pk=self.pk).exists():
             raise ValueError(
@@ -167,7 +173,7 @@ class CTTModel(models.Model):
             tpd__ancestor_id=self.id).count() == 1
 
     def is_root_node(self):
-        return self.get_level() == 0
+        return self.level == 0
 
     def _get_unique_ancestors(self, target, others=False, include_self=False,
                               include_target=False):
@@ -231,7 +237,7 @@ class CTTModel(models.Model):
         :return:
         """
         cls._tpm.objects.all().delete()
-        for node in cls._cls.objects.all():
+        for node in cls._cls.objects.all().order_by('tpd__path_len'):
             node.insert_at(node.parent, allow_existing_pk=True)
 
 
