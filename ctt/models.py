@@ -237,7 +237,7 @@ class CTTModel(models.Model):
         :return:
         """
         cls._tpm.objects.all().delete()
-        for node in cls._cls.objects.all().order_by('tpd__path_len'):
+        for node in cls._cls.objects.all().order_by('level'):
             node.insert_at(node.parent, allow_existing_pk=True)
 
 

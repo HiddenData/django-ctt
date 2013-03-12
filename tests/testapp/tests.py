@@ -15,6 +15,9 @@ class CTTDummyTest(TestCase):
          / \
         3   4
         """
+        self._create_tree()
+
+    def _create_tree(self):
         self.n1 = Node.objects.create(name='1')
         self.n2 = Node.objects.create(name='2', parent=self.n1)
         self.n3 = Node.objects.create(name='3', parent=self.n2)
@@ -548,7 +551,30 @@ class CTTDummyOrderableTest(TestCase):
         self.assertEqual(n7.get_previous_sibling(), self.n3)
 
 
-class CTTDummyRebuildTest(CTTDummyTest):
+class RebuildTreeMixin(object):
+
+    def _create_tree(self):
+        """
+            1
+           / \
+          2   5
+         / \
+        3   4
+        """
+        # Create nodes in order that would break rebuild tree if it didn't
+        # order them correctly
+        self.n1 = Node.objects.create(name='1')
+        self.n3 = Node.objects.create(name='3', parent=None)
+        self.n4 = Node.objects.create(name='4', parent=None)
+        self.n2 = Node.objects.create(name='2', parent=self.n1)
+        self.n5 = Node.objects.create(name='5', parent=self.n1)
+        self.n6 = Node.objects.create(name='6')
+        self.root = self.n1
+        self.n3.move_to(self.n2)
+        self.n4.move_to(self.n2)
+
+
+class CTTDummyRebuildTest(RebuildTreeMixin, CTTDummyTest):
     def setUp(self):
         super(CTTDummyRebuildTest, self).setUp()
         tpms_before = Node._tpm.objects.count()
@@ -558,7 +584,7 @@ class CTTDummyRebuildTest(CTTDummyTest):
         self.assertEqual(tpms_before, Node._tpm.objects.count())
 
 
-class CTTDummyOrderableRebuildTest(CTTDummyOrderableTest):
+class CTTDummyOrderableRebuildTest(RebuildTreeMixin, CTTDummyOrderableTest):
     def setUp(self):
         super(CTTDummyOrderableRebuildTest, self).setUp()
         tpms_before = NodeOrderable._tpm.objects.count()
