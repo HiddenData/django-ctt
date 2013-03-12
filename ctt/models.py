@@ -240,6 +240,49 @@ class CTTModel(models.Model):
         for node in cls._cls.objects.all().order_by('level'):
             node.insert_at(node.parent, allow_existing_pk=True)
 
+    @classmethod
+    def _rebuild_qs(cls, qs):
+        """
+        Przebudowuje wszystkie ścieżki przechodzące przez qs, powolne,
+        używaj _rebuild_tree chyba że wiesz co robisz.
+        """
+
+        def item_descendants(item, result=None):
+            if not result:
+                result = []
+
+            children = list(cls._cls.objects.filter(parent=item))
+            result.extend(children)
+            for c in children:
+                item_descendants(c, result)
+
+            return result
+
+        def item_ancestors(item, result=None):
+            if not result:
+                result = []
+
+            while item:
+                result.append(item)
+                item = item.parent
+
+            return result
+
+        related_nodes = set()
+        for item in qs:
+            # Get parents:
+            related_nodes = related_nodes.union(item_ancestors(item))
+            related_nodes = related_nodes.union(item_descendants(item))
+
+        tpms = cls._tpm.objects.filter(
+            ancestor__in=related_nodes,
+            descendant__in=related_nodes)
+
+        tpms.delete()
+
+        for node in sorted(related_nodes, key=lambda i: i.level):
+            node.insert_at(node.parent, allow_existing_pk=True)
+
 
 class CTTOrderableModel(CTTModel):
     order = models.IntegerField()

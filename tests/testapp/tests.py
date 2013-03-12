@@ -584,6 +584,23 @@ class CTTDummyRebuildTest(RebuildTreeMixin, CTTDummyTest):
         self.assertEqual(tpms_before, Node._tpm.objects.count())
 
 
+class CTTDummyRebuildQSTest(RebuildTreeMixin, CTTDummyTest):
+    def setUp(self):
+        super(CTTDummyRebuildQSTest, self).setUp()
+
+        tpms_before = Node._tpm.objects.count()
+
+        Node._tpm.objects.filter(
+            descendant__in=Node.objects.filter(
+                name__in=['1', '2', '3', '4'])).\
+            delete()
+        self.assertNotEqual(tpms_before, Node._tpm.objects.count())
+
+        Node._rebuild_qs(Node.objects.filter(name='2'))
+
+        self.assertEqual(tpms_before, Node._tpm.objects.count())
+
+
 class CTTDummyOrderableRebuildTest(RebuildTreeMixin, CTTDummyOrderableTest):
     def setUp(self):
         super(CTTDummyOrderableRebuildTest, self).setUp()
