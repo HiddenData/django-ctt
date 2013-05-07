@@ -306,6 +306,13 @@ class CTTOrderableModel(CTTModel):
             return None
         return ret_node[0]
 
+    def get_children(self):
+        return super(CTTOrderableModel, self).get_children().order_by('order')
+
+    def get_siblings(self, include_self=False):
+        return super(CTTOrderableModel, self).get_siblings(
+            include_self).order_by('order')
+
     def save(self, force_insert=False, force_update=False, using=None):
         self._fix_order()
         super(CTTOrderableModel, self).save(force_insert, force_update, using)
