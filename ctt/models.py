@@ -28,7 +28,7 @@ class CTTModel(models.Model):
     def __unicode__(self):
         if hasattr(self, 'name'):
             return self.name
-        return str(self.id)
+        return unicode(self.id)
 
     def save(self, force_insert=False, force_update=False, using=None):
         is_new = self.pk is None
