@@ -285,7 +285,7 @@ class CTTModel(models.Model):
 
 
 class CTTOrderableModel(CTTModel):
-    order = models.IntegerField()
+    order = models.IntegerField(verbose_name=_(u"order"))
     _interval = 10
 
     class Meta:
