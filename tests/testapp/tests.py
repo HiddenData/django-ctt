@@ -551,6 +551,32 @@ class CTTDummyOrderableTest(TestCase):
         self.assertEqual(n7.get_previous_sibling(), self.n3)
 
 
+
+class CTTConflictsOrderableTest(TestCase):
+    def setUp(self):
+        """
+        Nodes counter is over 1000 to fetch error connected with
+        python maximum depth recursion (defaukt 1000)
+
+                1
+               / \
+             / / \ \
+           / / / \ \ \
+          2 3 4  5 6 ..1025
+        """
+        self.root = NodeOrderable.objects.create(name='1')
+        for i in xrange(2,1026):
+            NodeOrderable.objects.create(name=unicode(i), parent=self.root, order=i)
+
+    def test_move_lowest_node(self):
+        lowest = NodeOrderable.objects.filter(parent=self.root).order_by('order')[0]
+        lowest.order += 1
+        lowest.save()
+
+        self.assertEqual(lowest.order, 3)
+        for item in NodeOrderable.objects.filter(parent=self.root):
+            self.assertEqual(item.order, int(item.name) + 1)
+
 class RebuildTreeMixin(object):
 
     def _create_tree(self):

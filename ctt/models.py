@@ -6,6 +6,7 @@
 Closure Tables Tree models.
 """
 from django.db import models
+from django.db.models import F
 from django.db.models.query_utils import Q
 from ctt.decorators import filtered_qs
 from django.utils.translation import ugettext as _
@@ -350,9 +351,11 @@ class CTTOrderableModel(CTTModel):
         self._check_order_conflicts()
 
     def _check_order_conflicts(self):
-        conflicts = self.get_siblings().filter(order=self.order)
+        q = self.get_siblings()
         if self.pk:
-            conflicts = conflicts.exclude(pk=self.pk)
+            q = q.exclude(pk=self.pk)
 
+        conflicts = q.filter(order=self.order)
         if conflicts.exists():
-            conflicts[0]._push_forward(self.order)
+            candidates = q.filter(order__gte=self.order)
+            candidates.update(order=F('order') + 1)
