@@ -550,6 +550,40 @@ class CTTDummyOrderableTest(TestCase):
         self.assertEqual(n7.get_next_sibling(), self.n4)
         self.assertEqual(n7.get_previous_sibling(), self.n3)
 
+    def test_move_before(self):
+        """
+            1
+           / \
+          2   5
+         / \
+        4   3
+        """
+        self.assertEqual(self.n3.order, 0)
+        self.assertEqual(self.n4.order, 10)
+
+        self.n4.move_before(self.n3)
+        n3 = NodeOrderable.objects.get(name='3')
+        n4 = NodeOrderable.objects.get(name='4')
+        self.assertEqual(n3.order, 0)
+        self.assertEqual(n4.order, -10)
+
+    def test_move_after(self):
+        """
+            1
+           / \
+          5   2
+             / \
+            4   3
+        """
+        self.assertEqual(self.n2.order, 0)
+        self.assertEqual(self.n5.order, 10)
+
+        self.n2.move_after(self.n5)
+        n2 = NodeOrderable.objects.get(name='2')
+        n5 = NodeOrderable.objects.get(name='5')
+        self.assertEqual(n2.order, 11)
+        self.assertEqual(n5.order, 10)
+
 
 
 class CTTConflictsOrderableTest(TestCase):

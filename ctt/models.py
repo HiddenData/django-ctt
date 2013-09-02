@@ -336,9 +336,11 @@ class CTTOrderableModel(CTTModel):
             self.order = before[0].order + 1
         else:
             self.order = sibling.order - self._interval
+        self.save()
 
     def move_after(self, sibling):
         self.order = sibling.order + 1
+        self.save()
 
     def _fix_order(self):
         if not self.order:
