@@ -29,10 +29,10 @@ class CTTModel(models.Model):
     def __unicode__(self):
         if hasattr(self, 'name'):
             return self.name
-        return unicode(self.id)
+        return unicode(self.pk)
 
     def save(self, force_insert=False, force_update=False, using=None):
-        is_new = self.pk is None
+        is_new = force_insert or self.pk is None
         if not is_new:
             old_parent = self._cls.objects.get(pk=self.pk).parent
         else:
@@ -52,9 +52,9 @@ class CTTModel(models.Model):
             self.move_to(self.parent)
 
     def get_ancestors(self, ascending=False, include_self=False):
-        ancestors = self._cls.objects.filter(tpa__descendant_id=self.id)
+        ancestors = self._cls.objects.filter(tpa__descendant_id=self.pk)
         if not include_self:
-            ancestors = ancestors.exclude(id=self.id)
+            ancestors = ancestors.exclude(id=self.pk)
         if ascending:
             ancestors = ancestors.order_by('tpa__path_len')
         else:
@@ -64,7 +64,7 @@ class CTTModel(models.Model):
     @filtered_qs
     def get_children(self):
         nodes = self._cls.objects.filter(
-            Q(tpd__ancestor_id=self.id) & Q(tpd__path_len=1)
+            Q(tpd__ancestor_id=self.pk) & Q(tpd__path_len=1)
         )
         return nodes
 
@@ -72,9 +72,9 @@ class CTTModel(models.Model):
         return self.get_descendants().count()
 
     def get_descendants(self, include_self=False):
-        nodes = self._cls.objects.filter(tpd__ancestor_id=self.id)
+        nodes = self._cls.objects.filter(tpd__ancestor_id=self.pk)
         if not include_self:
-            nodes = nodes.exclude(id=self.id)
+            nodes = nodes.exclude(id=self.pk)
         return nodes
 
     def get_leafnodes(self, include_self=False):
@@ -110,13 +110,13 @@ class CTTModel(models.Model):
 
     def get_siblings(self, include_self=False):
         if not self.parent:
-            nodes = self._cls.objects.filter(id=self.id)
+            nodes = self._cls.objects.filter(id=self.pk)
         else:
             nodes = self._cls.objects.filter(
                 Q(tpd__ancestor_id=self.parent_id) & Q(tpd__path_len=1)
             )
         if not include_self:
-            nodes = nodes.exclude(id=self.id)
+            nodes = nodes.exclude(id=self.pk)
         return nodes
 
     def get_root(self):
@@ -139,15 +139,15 @@ class CTTModel(models.Model):
         if target:
             self.parent = target
             path = target.get_ancestors(ascending=True,
-                include_self=True).only('id')
+                include_self=True).only('pk')
         else:
             path = []
-        tree_paths = [self._tpm(ancestor_id=self.id, descendant_id=self.id,
+        tree_paths = [self._tpm(ancestor_id=self.pk, descendant_id=self.pk,
             path_len=0), ]
         path_len = 1
         for node in path:
             tree_paths.append(
-                self._tpm(ancestor_id=node.id, descendant_id=self.id,
+                self._tpm(ancestor_id=node.pk, descendant_id=self.pk,
                     path_len=path_len)
             )
             path_len += 1
@@ -171,7 +171,7 @@ class CTTModel(models.Model):
 
     def is_leaf_node(self):
         return self._cls.objects.filter(
-            tpd__ancestor_id=self.id).count() == 1
+            tpd__ancestor_id=self.pk).count() == 1
 
     def is_root_node(self):
         return self.level == 0
@@ -195,21 +195,21 @@ class CTTModel(models.Model):
         :param others:
         :return:
         """
-        #        ancestors = self._cls.objects.filter(tpa__descendant_id=self.id)
+        #        ancestors = self._cls.objects.filter(tpa__descendant_id=self.pk)
         if others:
             uni_ancestors = self._cls.objects.filter(
                 Q(tpa__descendant_id=target.id)
                 &
-                ~Q(tpa__descendant_id=self.id)
+                ~Q(tpa__descendant_id=self.pk)
             )
         else:
             uni_ancestors = self._cls.objects.filter(
-                Q(tpa__descendant_id=self.id)
+                Q(tpa__descendant_id=self.pk)
                 &
                 ~Q(tpa__descendant_id=target.id)
             )
         if not include_self:
-            uni_ancestors = uni_ancestors.exclude(id=self.id)
+            uni_ancestors = uni_ancestors.exclude(id=self.pk)
         if not include_target:
             uni_ancestors = uni_ancestors.exclude(id=target.id)
         return uni_ancestors
