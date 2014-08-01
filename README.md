@@ -8,3 +8,5 @@ Implementation of sql trees with Closure Table
 
 
 Documentation is coming soon...
+
+slack test
