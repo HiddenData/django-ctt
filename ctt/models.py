@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-#-*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 #vim: set ts=4 sw=4 et fdm=marker : */
 
 """
@@ -14,14 +14,17 @@ from django.utils.translation import ugettext as _
 
 class CTTModel(models.Model):
     parent = models.ForeignKey('self', null=True, blank=True)
-    level = models.IntegerField(default=0, blank=True)
-    _tpm = None # overwrite by core.register()
-    tpd = None # overwrite by core.register()
-    tpa = None # overwrite by core.register()
+    level = models.IntegerField(default=0, blank=True, db_index=True)
+    _tpm = None  # overwrite by core.register()
+    tpd = None  # overwrite by core.register()
+    tpa = None  # overwrite by core.register()
     _cls = None
 
     class Meta:
         abstract = True
+        index_together = [
+            ['parent', 'level']
+        ]
 
     class CTTMeta:
         parent_field = 'parent'
@@ -131,24 +134,24 @@ class CTTModel(models.Model):
             self.save()
             return
 
-        if self.pk and not allow_existing_pk and\
-           self._cls.objects.filter(pk=self.pk).exists():
+        if self.pk and not allow_existing_pk and \
+                self._cls.objects.filter(pk=self.pk).exists():
             raise ValueError(
                 _('Cannot insert a node which has already been saved.'))
 
         if target:
             self.parent = target
             path = target.get_ancestors(ascending=True,
-                include_self=True).only('pk')
+                                        include_self=True).only('pk')
         else:
             path = []
         tree_paths = [self._tpm(ancestor_id=self.pk, descendant_id=self.pk,
-            path_len=0), ]
+                                path_len=0), ]
         path_len = 1
         for node in path:
             tree_paths.append(
                 self._tpm(ancestor_id=node.pk, descendant_id=self.pk,
-                    path_len=path_len)
+                          path_len=path_len)
             )
             path_len += 1
         self._tpm.objects.bulk_create(tree_paths)
@@ -321,8 +324,8 @@ class CTTOrderableModel(CTTModel):
     def _push_forward(self, from_pos):
         new_order = from_pos + self._interval
         siblings = self.get_siblings()
-        to_push = siblings.filter(order__gt=self.order, order__lte=new_order).\
-        order_by('order')
+        to_push = siblings.filter(order__gt=self.order, order__lte=new_order). \
+            order_by('order')
         if to_push.exists():
             to_push[0]._push_forward(new_order)
 
@@ -330,8 +333,8 @@ class CTTOrderableModel(CTTModel):
         self.save()
 
     def move_before(self, sibling):
-        before = self.get_siblings().filter(order__lt=sibling.order).\
-        order_by('-order')
+        before = self.get_siblings().filter(order__lt=sibling.order). \
+            order_by('-order')
         if before.exists():
             self.order = before[0].order + 1
         else:
