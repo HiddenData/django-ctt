@@ -34,7 +34,8 @@ class CTTModel(models.Model):
             return self.name
         return unicode(self.pk)
 
-    def save(self, force_insert=False, force_update=False, using=None):
+    def save(self, force_insert=False, force_update=False, using=None,
+             **kwargs):
         is_new = force_insert or self.pk is None
         if not is_new:
             old_parent = self._cls.objects.get(pk=self.pk).parent
@@ -44,7 +45,7 @@ class CTTModel(models.Model):
             self.level = self.parent.level + 1
         else:
             self.level = 0
-        super(CTTModel, self).save(force_insert, force_update, using)
+        super(CTTModel, self).save(force_insert, force_update, using, **kwargs)
         if is_new:
             self.insert_at(self.parent, save=False, allow_existing_pk=True)
         elif not self.parent and not old_parent:
@@ -317,9 +318,11 @@ class CTTOrderableModel(CTTModel):
         return super(CTTOrderableModel, self).get_siblings(
             include_self).order_by('order')
 
-    def save(self, force_insert=False, force_update=False, using=None):
+    def save(self, force_insert=False, force_update=False, using=None,
+             **kwargs):
         self._fix_order()
-        super(CTTOrderableModel, self).save(force_insert, force_update, using)
+        super(CTTOrderableModel, self).save(force_insert, force_update, using,
+                                            **kwargs)
 
     def _push_forward(self, from_pos):
         new_order = from_pos + self._interval
